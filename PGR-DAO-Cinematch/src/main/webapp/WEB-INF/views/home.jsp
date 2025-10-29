@@ -61,6 +61,17 @@
           </c:forEach>
         </select>
       </div>
+      
+      <div class="row">
+        <label for="pelicula">Película</label>
+        <select id="pelicula" name="pelicula" required>
+          <c:forEach var="p" items="${peliculas}">
+            <option value="${p.id}" <c:if test="${p.id == peliculaActual}">selected</c:if>>
+              ${p.titulo} (${p.genero}) - ⭐ ${p.puntuacionMedia}
+            </option>
+          </c:forEach>
+        </select>
+      </div>
 
       <div class="row">
         <label for="valoracion">Valoración personal media (1–5)</label>

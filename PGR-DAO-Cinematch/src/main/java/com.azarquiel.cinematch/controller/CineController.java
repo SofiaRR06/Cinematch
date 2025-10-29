@@ -33,26 +33,24 @@ public class CineController extends HttpServlet {
         super();
         // TODO Auto-generated constructor stub
     }
-    
-    /*Método auxiliar que recoge un párametro, verifica que no sea nulo y lo pasa como atributo al JSP*/
-    private void copiarParametros(HttpServletRequest request, String parametroACopiar) {
-        String valorParametroCopiado = request.getParameter(parametroACopiar);
-        if (valorParametroCopiado != null && !valorParametroCopiado.isBlank()) {
-            request.setAttribute(parametroACopiar, valorParametroCopiado);}
-        }
-        
         
         /*Recoge los párametros de la URL y los copia a los atributos, después muestra el JSP*/
       protected void doGet(HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) throws ServletException, IOException {
     	  
+    	  request.setCharacterEncoding("UTF-8");
+
+
     	  CineService service = new CineService();
 
     	  String op = request.getParameter("op");
-    	    if (op == null) op = "HOME"; // por defecto
+    	    if (op == null) op = "HOME"; 
 
     	    // Siempre cargamos la lista de géneros para el formulario
-    	    List<String> generos = List.of("ACCIÓN", "COMEDIA", "DRAMA", "CIENCIA FICCIÓN", "TERROR");
+    	    List<String> generos = List.of("Ciencia Ficción", "Animación", "Acción", "Drama", "Triller", "Comedia", "Musical");
     	    request.setAttribute("generos", generos);
+    	    
+    	    ArrayList<Pelicula> peliculas = service.listadoPeliculas();
+    	    request.setAttribute("peliculas", peliculas);
 
     	    // Recuperamos mensajes flash de la sesión
     	    Object flash = request.getSession().getAttribute("flash");
@@ -64,21 +62,21 @@ public class CineController extends HttpServlet {
     	    // Dependiendo de la operación, cargamos los datos necesarios
     	    switch (op) {
     	        case "HOME":
-    	            // Últimas valoraciones del usuario (si vienen de PRG)
+    	            // Últimas valoraciones del usuario
     	            Object ultimas = request.getSession().getAttribute("ultimas");
     	            if (ultimas != null) {
     	                request.setAttribute("ultimas", ultimas);
     	                request.getSession().removeAttribute("ultimas");
     	            }
 
-    	            // Recomendación de película (si viene de PRG)
+    	            // Recomendación de película 
     	            Object recomendacion = request.getSession().getAttribute("recomendacion");
     	            if (recomendacion != null) {
     	                request.setAttribute("recomendacion", recomendacion);
     	                request.getSession().removeAttribute("recomendacion");
     	            }
 
-    	            // Valores actuales del formulario (si vienen de PRG)
+    	            // Valores actuales del formulario
     	            Object aliasActual = request.getSession().getAttribute("aliasActual");
     	            Object generoActual = request.getSession().getAttribute("generoActual");
     	            Object valoracionActual = request.getSession().getAttribute("valoracionActual");
@@ -100,14 +98,12 @@ public class CineController extends HttpServlet {
     	            break;
 
     	        case "TOP_PELICULAS":
-    	            // Cargamos las top películas desde el servicio
-    	            List<Pelicula> top = service.topPeliculas(10); // por ejemplo, top 10
+    	            List<Pelicula> top = service.topPeliculas(10); 
     	            request.setAttribute("topPeliculas", top);
     	            request.getRequestDispatcher("/WEB-INF/views/top.jsp").forward(request, response);
     	            break;
 
     	        case "CONSULTAR_HISTORIAL":
-    	            // Cargamos el historial del alias (puede venir de PRG)
     	            Object historial = request.getSession().getAttribute("historial");
     	            if (historial != null) {
     	                request.setAttribute("historial", historial);
@@ -117,7 +113,6 @@ public class CineController extends HttpServlet {
     	            break;
 
     	        default:
-    	            // Por defecto, redirigimos al home
     	            response.sendRedirect("cine?op=HOME");
     	            break;
     	    }
@@ -125,11 +120,15 @@ public class CineController extends HttpServlet {
       
       protected void doPost(HttpServletRequest request, HttpServletResponse response)
     	    throws ServletException, IOException {
+    	  
+    	  request.setCharacterEncoding("UTF-8");
+
 
     	    String operacion = request.getParameter("operacion");
     	    String alias = request.getParameter("alias");
     	    String genero = request.getParameter("genero");
     	    String valoracionStr = request.getParameter("valoracion");
+    	    String peliculaIdStr = request.getParameter("pelicula");
 
     	    // Guardamos algunos datos en sesión para mantenerlos en el JSP
     	    request.getSession().setAttribute("aliasActual", alias);
@@ -142,20 +141,15 @@ public class CineController extends HttpServlet {
 
     	        case "REGISTRAR":
     	            try {
+    	            	int peliculaId = Integer.parseInt(peliculaIdStr);
     	                double valoracion = Double.parseDouble(valoracionStr);
     	                
     	                UsuarioPelicula up = new UsuarioPelicula();
     	                up.setAlias(alias);
     	                up.setValoracion(valoracion);
     	                up.setFechaRegistro(LocalDateTime.now());
-
-    	                // Asignar película según género (puedes cambiar la lógica)
-    	                Optional<Pelicula> peliculaOpt = service.recomendarPelicula(genero);
-
-    	                if (peliculaOpt.isPresent()) {
-    	                    Pelicula peli = peliculaOpt.get(); // extraemos la película
-    	                    up.setIdPelicula(peli.getId());
-    	                }
+    	                up.setIdPelicula(peliculaId);
+    	                
     	                
     	                service.registrarPreferencia(up);
 
@@ -182,6 +176,7 @@ public class CineController extends HttpServlet {
     	                    response.sendRedirect("cine?op=HOME");
     	                    return;
     	                }
+    	                System.out.println("Género recibido: [" + genero + "]");
 
     	                // Llamada al servicio para obtener la recomendación
     	                Optional<Pelicula> peliculaOpt = service.recomendarPelicula(genero);

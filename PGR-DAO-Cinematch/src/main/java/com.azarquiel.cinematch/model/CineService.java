@@ -16,7 +16,6 @@ public class CineService {
         usuarioPeliculaDAO = new UsuarioPeliculaDAO();
     }
     
-    
 	public void registrarPreferencia (UsuarioPelicula up) {
 		try {
 			usuarioPeliculaDAO.insert(up);
@@ -26,6 +25,9 @@ public class CineService {
 		}
 	}
 	
+	public ArrayList<Pelicula> listadoPeliculas (){
+		return peliculaDAO.findAllPeliculas();
+	}
 	
 	public Optional<Pelicula> recomendarPelicula (String genero) {
 		return peliculaDAO.findBestByGenero(genero);

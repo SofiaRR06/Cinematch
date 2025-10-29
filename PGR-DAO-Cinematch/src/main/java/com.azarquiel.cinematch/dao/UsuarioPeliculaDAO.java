@@ -5,7 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Optional;
 
 import conexion.Conexion;
@@ -22,11 +26,24 @@ public class UsuarioPeliculaDAO {
 		UsuarioPelicula nuevoUsuarioPelicula = new UsuarioPelicula();
 		
 		try {
-			nuevoUsuarioPelicula.setIdUsuarioPelicula(rs.getInt("IDUSUARIOPELICULA"));
+			nuevoUsuarioPelicula.setIdUsuarioPelicula(rs.getInt("ID"));
 			nuevoUsuarioPelicula.setAlias(rs.getString("ALIAS"));
-			nuevoUsuarioPelicula.setIdPelicula(rs.getInt("IDPELICULA"));
+			
+			int idPelicula = rs.getInt("PELICULA_ID");
+			nuevoUsuarioPelicula.setIdPelicula(idPelicula);
+			Pelicula pelicula = null;
+			try {
+				pelicula = PeliculaDAO.findPeliculaById(idPelicula);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
+			nuevoUsuarioPelicula.setPelicula(pelicula);
+			
 			nuevoUsuarioPelicula.setValoracion(rs.getDouble("VALORACION"));
-			nuevoUsuarioPelicula.setFechaRegistro(((Timestamp)rs.getObject("FECHALIMITEDEVOLUCION")).toLocalDateTime());
+			
+			LocalDateTime ldt = rs.getObject("FECHA_REGISTRO", LocalDateTime.class);
+			nuevoUsuarioPelicula.setFechaRegistro(ldt);
 			
 			
 		}catch (SQLException e) {
@@ -45,15 +62,15 @@ public class UsuarioPeliculaDAO {
 		try {
 			con = conexion.getConexion();			
 						
-			String query="INSERT INTO USUARIOPELICULA (IDUSUARIOPELICULA, ALIAS, IDPELICULA, VALORACION, FECHAREGISTRO) VALUES (?,?,?,?,?)";
+			String query="INSERT INTO USUARIO_PELICULA (ID, ALIAS, PELICULA_ID, VALORACION, FECHA_REGISTRO)\r\n"
+					+ "VALUES (seq_usuario_pelicula.NEXTVAL, ?, ?, ?, ?)";
 			
 			ps = con.prepareStatement(query);
 			
-			ps.setInt(1, up.getIdUsuarioPelicula());
-			ps.setObject(2, up.getAlias());
-			ps.setInt(3, up.getIdPelicula());
-			ps.setDouble(4, up.getValoracion());
-			ps.setTimestamp(5, java.sql.Timestamp.valueOf(up.getFechaRegistro()));
+			ps.setObject(1, up.getAlias());
+			ps.setInt(2, up.getIdPelicula());
+			ps.setDouble(3, up.getValoracion());
+			ps.setTimestamp(4, java.sql.Timestamp.valueOf(up.getFechaRegistro()));
 			
 			insercionCorrecta=ps.executeUpdate();
 			
@@ -91,7 +108,7 @@ public class UsuarioPeliculaDAO {
 		try {
 			con = conexion.getConexion();
 			
-			String query = "SELECT * FROM USUARIOPELICULA WHERE ALIAS LIKE ?";
+			String query = "SELECT * FROM USUARIO_PELICULA WHERE UPPER(ALIAS) LIKE ?";
 			
 			ps = con.prepareStatement(query);
 
@@ -106,9 +123,9 @@ public class UsuarioPeliculaDAO {
 
 			rs = ps.executeQuery();
 			
-			if(rs.next()) {
-				 listadoUsuarioPelicula.add(mapUsuarioPelicula(rs)); 
-			 } 
+			while(rs.next()) {
+	            listadoUsuarioPelicula.add(mapUsuarioPelicula(rs)); 
+	        }
 			 
 			} catch (SQLException e) {
 				System.out.println("Tratamiento del error");
@@ -144,20 +161,22 @@ public class UsuarioPeliculaDAO {
 		try {
 			con = conexion.getConexion();
 			
-			String query = "DELETE FROM USUARIOPELICULA WHERE ALIAS LIKE ?";
+			String query = "DELETE FROM USUARIO_PELICULA WHERE LOWER(ALIAS) LIKE ?";
 			
 			ps = con.prepareStatement(query);
 
 			if(alias==null) {
 				alias="%";
         	} else {
-        		alias="%"+alias.toUpperCase()+"%";
+        		alias="%"+alias.toLowerCase()+"%";
         	}
 			
 			ps.setObject(1, alias);
 
 
 			borradoCorrecto = ps.executeUpdate();
+			
+			con.commit();
 			 
 			} catch (SQLException e) {
 				System.out.println("Tratamiento del error");

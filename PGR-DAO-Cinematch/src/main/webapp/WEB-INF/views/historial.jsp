@@ -45,7 +45,7 @@
               <td>${item.pelicula.titulo}</td>
               <td>${item.pelicula.genero}</td>
               <td><fmt:formatNumber value="${item.valoracion}" minFractionDigits="1" maxFractionDigits="1"/></td>
-              <td><fmt:formatDate value="${item.fechaRegistro}" pattern="yyyy-MM-dd HH:mm"/></td>
+              <td>${item.fechaRegistroStr}</td>
             </tr>
           </c:forEach>
         </tbody>

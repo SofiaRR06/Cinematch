@@ -24,13 +24,57 @@ public class PeliculaDAO {
 			nuevaPelicula.setIdPelicula(rs.getInt("ID"));
 			nuevaPelicula.setTitulo(rs.getString("TITULO"));
 			nuevaPelicula.setGenero(rs.getString("GENERO"));
-			nuevaPelicula.setPuntuacion_media(rs.getDouble("PUNTUACION_MEDIA"));
+			nuevaPelicula.setPuntuacionMedia(rs.getDouble("PUNTUACION_MEDIA"));
 			
 		}catch (SQLException e) {
 			System.out.println("Excepción generando Pelicula");
 			e.printStackTrace();
 		}
 		 return nuevaPelicula;
+	}
+	
+	public static Pelicula findPeliculaById (int id) {
+		Pelicula pelicula = null;
+		
+		Conexion conexion=new Conexion();
+		Connection con=null;
+		PreparedStatement ps=null;
+		ResultSet rs=null;
+
+		try {
+			 con=conexion.getConexion();
+			 
+			 String query="SELECT * FROM PELICULA WHERE ID=?";
+			 
+			 ps = con.prepareStatement(query);
+			 
+			 ps.setInt(1, id);
+
+			 rs = ps.executeQuery();
+			 
+			 if(rs.next()) {
+				 pelicula = mapPelicula(rs); 
+			 } 
+		} catch (SQLException e) {
+			System.out.println("Tratamiento del error");
+			System.out.println(e.toString());
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if(rs!=null)
+					rs.close();
+				if(ps!=null)
+					ps.close();
+				if(con!=null)
+					con.close();
+			}catch (SQLException e) {
+				
+				e.printStackTrace();
+			}
+		}
+		return pelicula;
 	}
 	
 	
@@ -147,17 +191,18 @@ public class PeliculaDAO {
 			try {
 				con = conexion.getConexion();
 				
-				String query = "SELECT * FROM PELICULA WHERE GENERO LIKE ? ORDER BY PUNTUACION_MEDIA DESC LIMIT 1";
+				String query = "SELECT *\r\n"
+						+ "FROM (\r\n"
+						+ "    SELECT *\r\n"
+						+ "    FROM PELICULA\r\n"
+						+ "    WHERE TRIM(GENERO) = ?\r\n"
+						+ "    ORDER BY PUNTUACION_MEDIA DESC\r\n"
+						+ ")\r\n"
+						+ "WHERE ROWNUM = 1\r\n";
 				
 				ps = con.prepareStatement(query);
-
-				if(genero==null) {
-	        		genero="%";
-	        	} else {
-	        		genero="%"+genero.toUpperCase()+"%";
-	        	}
 				
-				ps.setObject(1, genero);
+				ps.setString(1, genero.trim());
 
 
 				rs = ps.executeQuery();
@@ -202,7 +247,7 @@ public class PeliculaDAO {
 					try {
 						con = conexion.getConexion();
 						
-						String query = "SELECT * FROM PELICULA ORDER BY PUNTUACION_MEDIA DESC LIMIT=?";
+						String query = "SELECT * FROM (SELECT * FROM PELICULA ORDER BY PUNTUACION_MEDIA DESC) WHERE ROWNUM <= ?";
 						
 						ps = con.prepareStatement(query);
 						
